@@ -201,18 +201,19 @@ facility, the name of the member formatted as a single column, and the cost.
 Order by descending cost, and do not use any subqueries. */
 
 SELECT fac.name,
-       CONCAT(mem.firstname, ' ', mem.surname) AS "Name",
-       CASE WHEN mem.memid = 0 THEN book.slots * fac.guestcost
-            ELSE book.slots * fac.membercost END AS "Cost"
-  FROM `Members` mem
-  JOIN `Bookings` book
-    ON mem.memid = book.memid
-  JOIN `Facilities` fac
+	   CONCAT(memb.firstname, ' ', memb.surname) AS fullname,
+        CASE WHEN memb.memid = 0 THEN book.slots * fac.guestcost
+        ELSE book.slots * fac.membercost  END AS cost
+FROM `Bookings` book
+JOIN `Members` memb
+    ON book.memid = memb.memid
+JOIN `Facilities` fac
     ON book.facid = fac.facid
- WHERE 30 < CASE WHEN mem.memid = 0 THEN book.slots * fac.guestcost
-                 ELSE book.slots * fac.membercost END
-   AND book.starttime LIKE '2012-09-14%'
-ORDER BY Cost DESC
+WHERE book.starttime LIKE '2012-09-14%'
+AND CASE WHEN memb.memid = 0 THEN book.slots * fac.guestcost
+    WHEN memb.memid !=0 THEN book.slots * fac.membercost
+	ELSE NULL END >30
+ORDER BY cost DESC
 
 name	        member_name	cost
 Massage Room 2	GUEST GUEST	320
@@ -232,23 +233,23 @@ Squash Court	GUEST GUEST	35
 
 /* Q9: This time, produce the same result as in Q8, but using a subquery. */
 
-SELECT combined.facility_name,
-       combined.member_name,
-       combined.booking_cost
-  FROM (SELECT b.starttime,
-               CONCAT(m.firstname, ' ', m.surname) AS member_name,
-               f.name AS facility_name,
-               CASE WHEN m.memid = 0
-                    THEN f.guestcost
-                    ELSE f.membercost END AS booking_cost
-          FROM `Bookings` b
-          JOIN `Facilities` f
-            ON f.facid = b.facid
-          JOIN `Members` m
-            ON m.memid = b.memid) combined
- WHERE combined.starttime LIKE '2012-09-14%'
-   AND combined.booking_cost > 30
- ORDER BY 3 DESC
+SELECT sub.facility as facility,
+	   sub.fullname as fullname,
+       sub.cost as totalcost
+  FROM (
+      SELECT fac.name as facility,
+      		CONCAT(memb.firstname, ' ', memb.surname) AS fullname,
+            CASE WHEN memb.memid = 0 THEN book.slots * fac.guestcost
+            ELSE book.slots * fac.membercost  END AS cost
+        FROM `Bookings` book
+        JOIN `Members` memb
+            ON book.memid = memb.memid
+        JOIN `Facilities` fac
+            ON book.facid = fac.facid 
+       WHERE book.starttime LIKE '2012-09-14%' 
+  		) sub
+WHERE sub.cost > 30
+ORDER BY totalcost DESC
  
 
 name	        member_name	cost
