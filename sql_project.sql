@@ -53,6 +53,7 @@ SELECT facid, name, membercost, monthlymaintenance
 FROM Facilities
 WHERE membercost>0
 AND membercost < (0.2*monthlymaintenance)
+AND membercost != 0.0
 
 
 facid	name	           membercost	  monthlymaintenance
